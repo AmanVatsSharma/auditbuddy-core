@@ -1,0 +1,97 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  isPremium     Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  accounts      Account[]
+  sessions      Session[]
+  audits        Audit[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Website {
+  id        String   @id @default(cuid())
+  url       String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  audits    Audit[]
+}
+
+model Audit {
+  id          String   @id @default(cuid())
+  websiteId   String
+  userId      String?
+  status      String   @default("PENDING") // PENDING, RUNNING, COMPLETED, FAILED
+  error       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Scores
+  seoScore           Int?
+  performanceScore   Int?
+  accessibilityScore Int?
+  securityScore      Int?
+
+  // Reports (JSON)
+  seoReport           Json?
+  performanceReport   Json?
+  accessibilityReport Json?
+  securityReport      Json?
+
+  // Premium features
+  pdfReport   String?  // URL to stored PDF
+  isPremium   Boolean  @default(false)
+  paidAt      DateTime?
+
+  website Website @relation(fields: [websiteId], references: [id])
+  user    User?   @relation(fields: [userId], references: [id])
+
+  technologies Json?
+  carbonFootprint Json?
+  cookieCompliance Json?
+  gdprStatus Json?
+  pwaScore Int?
+  domainHealth Json?
+  contentQuality Json?
+  bundleAnalysis Json?
+  schemaMarkup Json?
+} 
